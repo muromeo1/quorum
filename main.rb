@@ -32,6 +32,10 @@ class Main
     CSV.read("fixtures/#{file}.csv", headers: true).map(&:to_h)
   end
 
+  def find_by(hash, key, value)
+    hash.find { |h| h[key] == value }
+  end
+
   def calculate_legislator_votes
     vote_results.each do |result|
       legislator_id = result['legislator_id']
@@ -47,7 +51,7 @@ class Main
   def calculate_bill_votes
     votes.each do |vote|
       bill_id = vote['bill_id']
-      result = vote_results.find { |result| result['vote_id'] == vote['id'] }
+      result = find_by(vote_results, 'vote_id', vote['id'])
 
       next if result.nil?
 
@@ -60,7 +64,7 @@ class Main
       bill_votes[bill_id]['supporters'] += 1 if vote_type == '1'
       bill_votes[bill_id]['opposers'] += 1 if vote_type == '2'
 
-      if legislators.find { |legislator| legislator['id'] == legislator_id }
+      if find_by(legislators, 'id', legislator_id)
         bill_votes[bill_id]['primary_sponsor'] = legislator_id
       end
     end
@@ -96,7 +100,9 @@ class Main
 
         supporters = vote.dig('supporters') || 0
         opposers = vote.dig('opposers') || 0
-        primary_sponsor = vote.dig('primary_sponsor') || 'Unknown'
+        primary_sponsor =
+          find_by(legislators, 'id', vote.dig('primary_sponsor')).dig('name') ||
+            'Unknown'
 
         csv << [id, title, supporters, opposers, primary_sponsor]
       end
